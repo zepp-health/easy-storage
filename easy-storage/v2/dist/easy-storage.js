@@ -215,6 +215,8 @@ class EasyStorage {
  * */
 export class EasyFlashStorage { // @add 1.4.0
   #directory;
+  #keys;
+  #keysFileName;
 
   /**
    * Initializes the EasyFlashStorage with a specified directory.
@@ -227,6 +229,8 @@ export class EasyFlashStorage { // @add 1.4.0
   constructor(directory = "easy_flash_storage", use_index = true) {
     this.#directory = directory;
     makeDirectory(this.#directory);
+    this.#keysFileName = "keys"
+    this.#keys = this.getAllKeys()
   }
 
   /**
@@ -239,9 +243,16 @@ export class EasyFlashStorage { // @add 1.4.0
    * ```
    */
   setKey(key, value) {
+    let idx = this.#keys.indexOf(key)
+    if (idx < 0) {
+      idx = this.#keys.length
+      this.#keys.push(key)
+      this.#writeKeys()
+    }
+
     const data = JSON.stringify(value);
     // the data is stored as an arraybuf
-    writeFile(`${this.#directory}/${key}`, data);
+    writeFile(`${this.#directory}/${idx}`, data);
   }
 
   /**
@@ -254,9 +265,14 @@ export class EasyFlashStorage { // @add 1.4.0
    * ```
    */
   getKey(key) {
+    const idx = this.#keys.indexOf(key);
+    if (idx < 0) {
+      return undefined;
+    }
+
     // @upd 1.X.X
     try {
-      const file_content = readFile(`${this.#directory}/${key}`);
+      const file_content = readFile(`${this.#directory}/${idx}`);
       return JSON.parse(file_content);
     } catch (error) {
       debugLog(1, "Error accessing or parsing file:", error);
@@ -273,9 +289,14 @@ export class EasyFlashStorage { // @add 1.4.0
    * ```
    */
   removeKey(key) {
-    if (this.hasKey(key)) {
-      removeFile(`${this.#directory}/${key}`);
+    const idx = this.#keys.indexOf(key);
+    if (idx < 0) {
+      return;
     }
+    
+    this.#keys.splice(idx , 1)
+    writeFile(`${this.#directory}/${this.#keysFileName}`, this.#keys.join("\n"));
+    removeFile(`${this.#directory}/${idx}`);
   }
 
   // note: (!) doesn't treat empty files as non-existent as a key with an empty value is meaningful
@@ -293,8 +314,7 @@ export class EasyFlashStorage { // @add 1.4.0
    * ```
    */
   hasKey(key) {
-    const result = statSync({ path: this.#directory + "/" + key });
-    return result !== undefined;
+    return this.#keys.indexOf(key) > -1;
   }
 
   /**
@@ -306,8 +326,7 @@ export class EasyFlashStorage { // @add 1.4.0
    * ```
    */
   isEmpty() {
-    const keys = listDirectory(this.#directory);
-    return keys.length === 0 || (keys.length === 1 && keys.includes("index"));
+    return this.#keys.isEmpty()
   }
 
   /**
@@ -319,9 +338,7 @@ export class EasyFlashStorage { // @add 1.4.0
    * ```
    */
   count() {
-    const keys = listDirectory(this.#directory);
-    // ignore index file if it's stil thre
-    return keys.includes("index") ? keys.length - 1 : keys.length;
+    return this.#keys.length
   }
 
   // Note: the overhead of each file is 2 bytes. ie 6 byte file = 8 bytes.
@@ -341,7 +358,7 @@ export class EasyFlashStorage { // @add 1.4.0
    */
   dataSize(key, unit = "B") {
     if (this.hasKey(key)) {
-      let stat = statSync({ path: this.#directory + "/" + key });
+      let stat = statSync({ path: this.#directory + "/" + this.#keys.indexOf(key) });
       let size = stat ? stat.size : 0;
       return this.#convertSize(size, unit);
     } else {
@@ -364,15 +381,16 @@ export class EasyFlashStorage { // @add 1.4.0
    */
   size(unit = "B") {
     let ttl_size = 0;
-    const keys = listDirectory(this.#directory);
-    keys.forEach((key) => {
-      if (key === "index") return; // skip index file
-      const stat = statSync({ path: `${this.#directory}/${key}` });
+    this.#keys.forEach((_ , idx) => {
+      const stat = statSync({ path: `${this.#directory}/${idx}` });
       if (stat) ttl_size += stat.size;
     });
     return this.#convertSize(ttl_size, unit);
   }
 
+  #writeKeys() {
+    writeFile(`${this.#directory}/${this.#keysFileName}`, this.#keys.join("\n"));
+  }
   /**
    * Retrieves all keys from the storage, optionally stringified.
    * @param {boolean} [stringify=false] - If `true`, returns the keys as a JSON string; otherwise, returns an array of keys.
@@ -389,7 +407,11 @@ export class EasyFlashStorage { // @add 1.4.0
    * ```
    */
   getAllKeys(stringify = false) {
-    const keys = listDirectory(this.#directory);
+    let keys = this.#keys
+    if (!keys) {
+      const keyFileContent = readFile(`${this.#directory}/${this.#keysFileName}`);
+      keys = keyFileContent ? keyFileContent.split("\n") : []
+    }
     return stringify ? JSON.stringify(keys) : keys;
   }
 
@@ -410,9 +432,8 @@ export class EasyFlashStorage { // @add 1.4.0
    */
   getAllValues(stringify = false) {
     // @add 1.X.X
-    let values = [];
-    const keys = listDirectory(this.#directory);
-    values = keys.map((key) => this.getKey(key));
+    const keys = this.getAllKeys()
+    let values = keys.map((key) => this.getKey(key));
     values = values.filter((value) => value !== undefined); // filter undefined
     return stringify ? JSON.stringify(values) : values;
   }
@@ -437,8 +458,7 @@ export class EasyFlashStorage { // @add 1.4.0
     const keys = this.getAllKeys();
     const contents = keys.reduce((acc, key) => {
       try {
-        const file_content = readFile(`${this.#directory}/${key}`);
-        acc[key] = JSON.parse(file_content);
+        acc[key] = this.getKey(key)
       } catch (error) {
         debugLog(1, `Error parsing JSON from file for key ${key}:`, error);
       }
@@ -1669,6 +1689,7 @@ function readFile(filename) {
     debugLog(2, `Failed to read the file: ${filename}`);
     return ""; // return null
   } else {
+    debugLog(3, `readFileSync success, data read from '${filename}'`);
     // successfully read the file as a string
     return str_content;
   }
@@ -1751,8 +1772,7 @@ function listDirectory(directory) {
 
 function dirOrFileExists(path) {
   try {
-    statSync({ path: path });
-    return true;
+    return !!statSync({ path: path })
   } catch (error) {
     return false;
   }
