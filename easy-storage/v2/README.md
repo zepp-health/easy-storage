@@ -5,7 +5,7 @@ The `EasyStorage` suite is a handy set of tools for `ZeppOS` applications. It in
 
 Alongside these storage solutions, we have `EasyTSDB` (time-series database). It’s a special part of the `EasyStorage` suite that’s all about managing time-series data. Just like `InfluxDB`, `EasyTSDB` is great at storing, retrieving, and analyzing time-series data. It uses a mix of `RAM` and filesystem storage to manage data effectively, and can handle data flushes to disk when `RAM` gets full. It’s perfect for applications that need to manage time-series data effectively, and it supports custom aggregation and querying over specific time ranges.
 
-<img src="./assets/easy-tsdb-hr-example.gif" width="600px">
+<img src="https://raw.githubusercontent.com/silver-zepp/zeppos-easy-storage/master/assets/easy-tsdb-hr-example.gif" width="600px">
 
 ## Installation
 To install the library, run the following command from the root of your project:
@@ -14,7 +14,7 @@ To install the library, run the following command from the root of your project:
 
 ## ✨️ Examples
 
-### ➡️ 1. Using `EasyStorage` for Persistent Storage [[Read API🔗]](./docs/easy-storage.md)
+### ➡️ 1. Using `EasyStorage` for Persistent Storage [[Read API🔗]](https://github.com/silver-zepp/zeppos-easy-storage/blob/master/docs/easy-storage.md)
 A lightweight, hybrid storage solution combining in-memory efficiency with filesystem persistence, ideal for small to medium-sized data.
 ```js
 import EasyStorage from "@silver-zepp/easy-storage";
@@ -24,7 +24,7 @@ storage.setKey("name", "John Doe");
 console.log(storage.getKey("user")); // "John Doe"
 ```
 
-### ➡️ 2. Analyzing Time-Series Data with `EasyTSDB` [[Read API🔗]](./docs/easy-tsdb.md)
+### ➡️ 2. Analyzing Time-Series Data with `EasyTSDB` [[Read API🔗]](https://github.com/silver-zepp/zeppos-easy-storage/blob/master/docs/easy-tsdb.md)
 Efficiently manage and analyze time-series data, supporting a wide array of aggregation functions for comprehensive data analysis, making it perfect for applications requiring detailed time-based insights.
 ```js
 import { EasyTSDB } from "@silver-zepp/easy-storage";
@@ -42,7 +42,7 @@ const avg_temp = db.query(start_time, end_time, 'average');
 console.log(`Average temperature over the last 2 hours: ${avg_temp}`);
 ```
 
-### ➡️ 3. Using `EasyFlashStorage` for Large, Persistent Storage [[Read API🔗]](./docs/easy-flash-storage.md)
+### ➡️ 3. Using `EasyFlashStorage` for Large, Persistent Storage [[Read API🔗]](https://github.com/silver-zepp/zeppos-easy-storage/blob/master/docs/easy-flash-storage.md)
 Designed for heavy-duty storage needs, it leverages filesystem-based persistence to handle large datasets without compromising performance and saving RAM.
 ```js
 import { EasyFlashStorage } from "@silver-zepp/easy-storage";
@@ -52,7 +52,7 @@ flash.setKey("config", { theme: "dark", notifications: true, ... });
 console.log(flash.getKey("config"));
 ```
 
-### ➡️ 4. Using `EasyTempStorage` for Temporary, Volatile Storage [[Read API🔗]](./docs/easy-temp-storage.md)
+### ➡️ 4. Using `EasyTempStorage` for Temporary, Volatile Storage [[Read API🔗]](https://github.com/silver-zepp/zeppos-easy-storage/blob/master/docs/easy-temp-storage.md)
 Offers a transient, in-memory storage space for temporary data, ensuring fast access speeds and automatic clearance upon application closure.
 ```js
 import { EasyTempStorage } from "@silver-zepp/easy-storage";
@@ -62,7 +62,7 @@ temp.setKey("session", { token: "abc123" });
 console.log(temp.getKey("session"));
 ```
 
-### ➡️ 5. Direct File Operations with `Storage` Utility [[Read API🔗]](./docs/storage.md)
+### ➡️ 5. Direct File Operations with `Storage` Utility [[Read API🔗]](https://github.com/silver-zepp/zeppos-easy-storage/blob/master/docs/storage.md)
 A utility library providing straightforward, static methods for direct file operations, simplifying reading and writing of data to the filesystem.
 ```js
 import { Storage } from "@silver-zepp/easy-storage";
@@ -71,9 +71,66 @@ Storage.WriteFile("log.txt", "log entry example");
 console.log(Storage.ReadFile("log.txt"));
 ```
 
+# 📐 Library Map
+### EasyStorage
+- `setKey(key, value)`: Stores or updates a value for a key.
+- `getKey(key, defaultValue)`: Retrieves the value of a key.
+- `hasKey(key)`: Checks existence of a key.
+- `removeKey(key)`: Deletes a key and its associated value.
+- `saveAll()`: Forces saving all key-value pairs to the file.
+- `deleteAll()`: Deletes all keys and values.
+- `printContents()`: Displays all storage contents.
+- `getStorageSnapshot(stringify)`: Returns storage contents as a string or object.
+- `SetAutosaveEnable(bool)`: Enables or disables autosave.
+- `SetStorageFilename(filename)`: Changes the storage file name.
+- `GetStorageFilename()`: Returns the current storage filename.
+
+### EasyTSDB (time-series database)
+- `writePoint(measurement, value, timestamp)`: Writes a data point.
+- `query(start_time, end_time, aggregation_type, custom_aggregator)`: Queries data with aggregation.
+- `retrieveDataSeries(start_time, end_time)`: Retrieves raw data points.
+- `purge(older_than)`: Removes data points older than a specified timestamp.
+- `databaseClear(consent)`: Clears all database data.
+- `databaseClose()`: Closes the database, flushing data to disk.
+- `databaseBackup(backup_path, include_index)`: Backups the database.
+- `databaseRestore(consent, backup_path, recalculate_index)`: Restores the database from a backup.
+
+### EasyFlashStorage
+- `setKey(key, value)`: Stores or updates a value for a key, saving it to a file.
+- `getKey(key)`: Retrieves the value of a key from a file.
+- `removeKey(key)`: Deletes a file associated with a key.
+- `hasKey(key)`: Checks for the existence of a file for a key.
+- `dataSize(key, unit)`: Calculates the size of a file for a key.
+- `size(unit)`: Calculates the total size of all storage files.
+- `getAllKeys(stringify)`: Lists all keys in storage.
+- `getAllValues(stringify)`: Lists all values in storage.
+- `getStorageSnapshot(stringify)`: Returns all storage contents as a string or object.
+- `deleteAll()`: Deletes all keys and values, removing associated files.
+- `printAllKeys()`: Displays all keys and their values.
+
+### EasyTempStorage
+- `setKey(key, value)`: Temporarily stores a value for a key.
+- `getKey(key, defaultValue)`: Retrieves a value of a key.
+- `hasKey(key)`: Checks existence of a key.
+- `removeKey(key)`: Deletes a key and its value.
+- `deleteAll()`: Clears all keys and values.
+- `printAllKeys()`: Displays all keys and values.
+- `getAllKeys(stringify)`: Lists all keys in temporary storage.
+
+### Storage (Utility Class)
+- `WriteJson(filename,json)` : Writes a JSON object to a file.
+- `ReadJson(filename)`: Reads a JSON object from a file.
+- `WriteFile(filename, data)`: Writes data to a file.
+- `ReadFile(filename)`: Reads data from a file.
+- `RemoveFile(filename)`: Deletes a file.
+- `WriteAsset(filename, data)`: Writes data to an asset file.
+- `ReadAsset(filename)`: Reads data from an asset file.
+- `MakeDirectory(dirname)`: Creates a new directory.
+- `ListDirectory(dirname)`: Lists contents of a directory.
+
 # 📝 EasyStorage API Reference
-### 1. [EasyStorage API🔗](./docs/easy-storage.md)
-### 2. [EasyTSDB API🔗](./docs/easy-tsdb.md)
-### 3. [EasyFlashStorage API🔗](./docs/easy-flash-storage.md)
-### 4. [EasyTempStorage API🔗](./docs/easy-temp-storage.md)
-### 5. [Storage API🔗](./docs/storage.md)
+### 1. [EasyStorage API🔗](https://github.com/silver-zepp/zeppos-easy-storage/blob/master/docs/easy-storage.md)
+### 2. [EasyTSDB API🔗](https://github.com/silver-zepp/zeppos-easy-storage/blob/master/docs/easy-tsdb.md)
+### 3. [EasyFlashStorage API🔗](https://github.com/silver-zepp/zeppos-easy-storage/blob/master/docs/easy-flash-storage.md)
+### 4. [EasyTempStorage API🔗](https://github.com/silver-zepp/zeppos-easy-storage/blob/master/docs/easy-temp-storage.md)
+### 5. [Storage API🔗](https://github.com/silver-zepp/zeppos-easy-storage/blob/master/docs/storage.md)
