@@ -59,7 +59,7 @@ class EasyStorage {
   getKey(key, default_value = "") {
     debugLog(3, `Retrieving key: ${key}`);
     if (Object.prototype.hasOwnProperty.call(this.#content_obj, key)) {
-      const value = this.#content_obj[key].toString();
+      const value = JSON.stringify(this.#content_obj[key]);
       debugLog(2, `Found value for key '${key}': ${value}`);
       return value;
     }
